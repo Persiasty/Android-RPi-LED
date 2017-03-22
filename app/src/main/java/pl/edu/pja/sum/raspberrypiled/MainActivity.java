@@ -52,40 +52,14 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 	@Override
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
 	{
-		//w zależności czy chcemy się połączyczyć czy rozłączyć wykonujemy inny fragment kodu
-		if(isChecked)
+		try
 		{
-			//wybieramy urządzenie po jego adresie, który wpiszemy w aplikacji
-			BluetoothDevice raspberry = btAdapter.getRemoteDevice(String.valueOf(btAddress.getText()));
-			try
-			{
-				//próbujemy nawiązać połączenie z uługą
-				socket = raspberry.createRfcommSocketToServiceRecord(SPP_UID);
-				socket.connect();
-				out = socket.getOutputStream(); //otwieramy strumień do wysyłania danych
-
-				btLight.setEnabled(true); //włączamy nasz przycisk z żarówką
-			}
-			catch(IOException e)
-			{
-				//jeśli coś się nie powiedzie, to zgłaszamy bład.
-				Toast.makeText(this, "Nie można połączyć się z Raspberry PI :(", Toast.LENGTH_LONG).show();
-			}
+			polacz_rozlacz(isChecked);
 		}
-		else
+		catch(IOException e)
 		{
-			try
-			{
-				out.close(); //zamyamy stumień do wysyłania danych
-				socket.close(); //kończymy połączenie
-
-				btLight.setEnabled(false); //wyłączamy przycisk z żarówką
-			}
-			catch(IOException e)
-			{
-				//jeśli coś się nie powiedzie, to zgłaszamy bład.
-				Toast.makeText(this, "Wystąpił problem przy rozłączaniu :(", Toast.LENGTH_LONG).show();
-			}
+			//jeśli coś się nie powiedzie, to zgłaszamy bład.
+			Toast.makeText(this, "Wystąpił jakś problem :( " + e.getMessage(), Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -93,37 +67,57 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 	@Override
 	public void onClick(View v)
 	{
-		//w zależności czy chcemy zgasić czy zapalić diodę LED wykonujemy inny fragment kodu
-		if(lightsOn)
+		try
 		{
-			try
-			{
-				//wysyłamy 0 - co będzie oznaczało ze chcemy zgasić diodę
-				out.write('0');
+			zapal_zgas(!lightsOn);
+			lightsOn = !lightsOn;
+		}
+		catch(IOException e)
+		{
+			//jeśli coś się nie powiedzie, to zgłaszamy bład
+			Toast.makeText(this, "Nie udało się wysłać informacji :(", Toast.LENGTH_LONG).show();
+		}
+	}
 
-				btLight.setImageDrawable(getResources().getDrawable(R.drawable.ledoff)); //zmieniamy wygląd żarówki
-				lightsOn = false; //zmieniamy stan naszej zarówki
-			}
-			catch(IOException e)
-			{
-				//jeśli coś się nie powiedzie, to zgłaszamy bład
-				Toast.makeText(this, "Nie udało się wysłać informacji :(", Toast.LENGTH_LONG).show();
-			}
+	public void polacz_rozlacz(boolean polacz) throws IOException
+	{
+		//w zależności czy chcemy się połączyczyć czy rozłączyć wykonujemy inny fragment kodu
+		if(polacz)
+		{
+			//wybieramy urządzenie po jego adresie, który wpiszemy w aplikacji
+			BluetoothDevice raspberry = btAdapter.getRemoteDevice(String.valueOf(btAddress.getText()));
+
+			//próbujemy nawiązać połączenie z uługą
+			socket = raspberry.createRfcommSocketToServiceRecord(SPP_UID);
+			socket.connect();
+			out = socket.getOutputStream(); //otwieramy strumień do wysyłania danych
+
+			btLight.setEnabled(true); //włączamy nasz przycisk z żarówką
 		}
 		else
 		{
-			try
-			{
-				out.write('1');
+			out.close(); //zamyamy stumień do wysyłania danych
+			socket.close(); //kończymy połączenie
 
-				btLight.setImageDrawable(getResources().getDrawable(R.drawable.ledon)); //zmieniamy wygląd żarówki
-				lightsOn = true; //zmieniamy stan naszej zarówki
-			}
-			catch(IOException e)
-			{
-				//jeśli coś się nie powiedzie, to zgłaszamy bład.
-				Toast.makeText(this, "Nie udało się wysłać informacji :(", Toast.LENGTH_LONG).show();
-			}
+			btLight.setEnabled(false); //wyłączamy przycisk z żarówką}
+		}
+	}
+
+	public void zapal_zgas(boolean zapal) throws IOException
+	{
+		//w zależności czy chcemy zgasić czy zapalić diodę LED wykonujemy inny fragment kodu
+		if(zapal)
+		{
+			out.write('1');
+
+			btLight.setImageDrawable(getResources().getDrawable(R.drawable.ledon)); //zmieniamy wygląd żarówki
+		}
+		else
+		{
+			//wysyłamy 0 - co będzie oznaczało ze chcemy zgasić diodę
+			out.write('0');
+
+			btLight.setImageDrawable(getResources().getDrawable(R.drawable.ledoff)); //zmieniamy wygląd żarówki
 		}
 	}
 }
